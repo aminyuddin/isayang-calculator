@@ -2,30 +2,48 @@
 
 import { useState } from 'react';
 
-interface CalculatorInputs {
-  monthlySalary: number;
-  contributionRate: number;
-  yearsOfContribution: number;
-}
-
 export default function ISayangCalculator() {
-  const [inputs, setInputs] = useState<CalculatorInputs>({
-    monthlySalary: 0,
-    contributionRate: 11,
-    yearsOfContribution: 1,
+  const [fields, setFields] = useState({
+    monthlySalary: '2000',
+    contributionRate: '11',
+    yearsOfContribution: '1',
   });
-
   const [result, setResult] = useState<{
     iSayangMonthly: number;
     iSayangTotal: number;
   } | null>(null);
 
+  // Unified input handler
+  const handleInputChange = (field: keyof typeof fields, value: string) => {
+    // Only allow numbers and single decimal point (except for yearsOfContribution)
+    if (field === 'yearsOfContribution') {
+      // Only allow whole numbers
+      if (!/^\d*$/.test(value)) return;
+      setFields(prev => ({ ...prev, [field]: value }));
+      return;
+    }
+    // For other fields, allow decimals
+    if (!/^\d*\.?\d*$/.test(value)) return;
+    // Limit decimal places
+    const parts = value.split('.');
+    if (parts.length === 2 && parts[1].length > 2) return;
+    setFields(prev => ({ ...prev, [field]: value }));
+  };
+
   const calculateISayang = () => {
+    // Parse values
+    const monthlySalary = parseFloat(fields.monthlySalary) || 0;
+    const contributionRate = parseFloat(fields.contributionRate) || 0;
+    const yearsOfContribution = parseInt(fields.yearsOfContribution, 10) || 0;
+    if (!monthlySalary || !contributionRate || !yearsOfContribution) {
+      setResult(null);
+      return;
+    }
     // Employee Share Contribution = monthlySalary * (contributionRate / 100)
-    const employeeShare = (inputs.monthlySalary * inputs.contributionRate) / 100;
+    const employeeShare = (monthlySalary * contributionRate) / 100;
     // i-Sayang = (2 / contributionRate) * employeeShare
-    const iSayangMonthly = (2 / inputs.contributionRate) * employeeShare;
-    const iSayangTotal = iSayangMonthly * 12 * inputs.yearsOfContribution;
+    const iSayangMonthly = (2 / contributionRate) * employeeShare;
+    const iSayangTotal = iSayangMonthly * 12 * yearsOfContribution;
     setResult({ iSayangMonthly, iSayangTotal });
   };
 
@@ -37,16 +55,15 @@ export default function ISayangCalculator() {
           Calculate the 2% i-Sayang transfer from your employee share contribution
         </p>
       </div>
-
       <div className="space-y-4 mb-8">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Monthly Salary (RM)
           </label>
           <input
-            type="number"
-            value={inputs.monthlySalary}
-            onChange={(e) => setInputs({ ...inputs, monthlySalary: Number(e.target.value) })}
+            type="text"
+            value={fields.monthlySalary}
+            onChange={(e) => handleInputChange('monthlySalary', e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Enter monthly salary"
           />
@@ -56,9 +73,9 @@ export default function ISayangCalculator() {
             Employee Share Statutory Rate (%)
           </label>
           <input
-            type="number"
-            value={inputs.contributionRate}
-            onChange={(e) => setInputs({ ...inputs, contributionRate: Number(e.target.value) })}
+            type="text"
+            value={fields.contributionRate}
+            onChange={(e) => handleInputChange('contributionRate', e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Enter statutory rate (e.g. 11)"
           />
@@ -68,9 +85,9 @@ export default function ISayangCalculator() {
             Years of Contribution
           </label>
           <input
-            type="number"
-            value={inputs.yearsOfContribution}
-            onChange={(e) => setInputs({ ...inputs, yearsOfContribution: Number(e.target.value) })}
+            type="text"
+            value={fields.yearsOfContribution}
+            onChange={(e) => handleInputChange('yearsOfContribution', e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Enter years of contribution"
           />
@@ -82,7 +99,6 @@ export default function ISayangCalculator() {
           Calculate
         </button>
       </div>
-
       {result && (
         <div className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">i-Sayang Transfer Result</h2>
@@ -94,7 +110,7 @@ export default function ISayangCalculator() {
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-blue-700 font-medium">Total i-Sayang Transfer ({inputs.yearsOfContribution} year{inputs.yearsOfContribution > 1 ? 's' : ''}):</span>
+              <span className="text-blue-700 font-medium">Total i-Sayang Transfer ({fields.yearsOfContribution} {fields.yearsOfContribution === '1' ? 'year' : 'years'}):</span>
               <span className="font-semibold text-blue-800">
                 RM {result.iSayangTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
